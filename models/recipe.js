@@ -822,16 +822,24 @@ module.exports = (db) => {
             // create query
             var uid = args[0];
             var query = `
-                SELECT l.userID, COUNT(*)  * IF(gender = (SELECT gender FROM user WHERE userID = ${uid}), 1, 0.5)AS similarity
-                FROM userlike AS l
-                INNER JOIN user AS u
-                ON u.userID = l.userID
-                WHERE recipetagtypeID IN(
-                SELECT recipetagtypeID FROM userlike WHERE userID = ${uid}
-                ) AND 
-                l.userID != ${uid}
-                GROUP BY userID
-                ORDER BY similarity DESC
+            SELECT l.userID, 
+                COUNT(*) AS count_similar, 
+                gender, 
+                (SELECT gender FROM user WHERE userID = ${uid}) AS ref_gender,
+                onDiet,
+                (SELECT onDiet FROM user WHERE userID = ${uid}) AS ref_on_diet,
+                age,
+                (SELECT age FROM user WHERE userID = ${uid}) AS ref_age
+
+            FROM userlike AS l
+            INNER JOIN user AS u
+            ON u.userID = l.userID
+            WHERE recipetagtypeID IN(
+            SELECT recipetagtypeID FROM userlike WHERE userID = ${uid}
+            ) AND 
+            l.userID != ${uid}
+            GROUP BY userID
+            ORDER BY count_similar DESC
             `;
             // return a promise object
             return new Promise((resolve, reject) => {

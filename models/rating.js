@@ -60,6 +60,29 @@ module.exports = (db) => {
                 });
             });
         },
+        getRating: function() {
+            var args = Array.from(arguments);     
+            var uid = args[0];     
+            // create query
+            var query = `
+            SELECT
+			*
+            FROM rating AS a
+            WHERE a.userID = ${uid}
+            ORDER BY rating DESC
+            `;
+            // return a promise object
+            return new Promise((resolve, reject) => {
+                // get records from db
+                db.query(query, args, (err, rows) => {
+                    // return result
+                    err != null ? reject({
+                        code    : 500,
+                        messages: [err.message]
+                    }) : resolve(rows);
+                });
+            });
+        },
         updateRatingById: function() {
             var args = Array.from(arguments);            
             // create query

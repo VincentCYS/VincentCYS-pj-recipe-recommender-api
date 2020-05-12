@@ -62,6 +62,162 @@ module.exports = {
       );
   },
 
+  "GET /similar_liked_recipe": function(req, res) {
+
+    var rid = '';
+    new Promise((resolve, reject) =>{
+      req.db.models.rating.getRating(req.query.uid)
+      .then(rows => {
+        if (rows.length) {
+          rid = rows[0].recipeID;
+          resolve(rows);
+        } else {
+          reject("no.rating.are.found");
+        }
+      })
+    })
+    .then(() => new Promise((resolve, reject) => {
+      req.db.models.recipe
+        .fetchSimilarIngredientsRecipeById()
+        .then(rows => {
+          if (rows.length) {
+            resolve(rows);
+          } else {
+            resolve([]);
+          }
+        })
+        .catch(reject);
+    }))
+    .then(
+      rows =>
+        new Promise((resolve, reject) => {
+          var ref = {};
+          var recommend = [];
+          var sim = 0;
+          rows.map(r => {
+            if (r.recipeID == rid) {
+              ref = r;
+            }
+          });
+
+          rows.map(r => {
+            if (
+              r.recipeID != parseInt(rid) &&
+              r.ingredient_list_id &&
+              ref.ingredient_list_id
+            ) {
+              var refList = ref.ingredient_list_id.split(",");
+              var testList = r.ingredient_list_id.split(",");
+
+
+              var combineArr = [];
+              testList.map(t => {
+                !combineArr.includes(t) ? combineArr.push(t) : null;
+              });
+
+              refList.map(r => {
+                !combineArr.includes(r) ? combineArr.push(r) : null;
+              });
+
+              var a = [];
+              var b = [];
+              combineArr.map(c => {
+                // calculate the similarity with ingedient and portion
+                a.push(
+                  refList.includes(c) ? refList[refList.indexOf(c)] : 0
+                );
+                b.push(
+                  testList.includes(c) ? testList[testList.indexOf(c)] : 0
+                );
+              });
+
+
+              // var refPortion = ref.ingredient_list_portion.split(",");
+              // var testPortion = r.ingredient_list_portion.split(",");
+              // var portionArr = [];
+
+              // // portion
+              // testPortion.map(t => {
+              //   !portionArr.includes(t) ? portionArr.push(t) : null;
+              // });
+
+              // refPortion.map(r => {
+              //   !portionArr.includes(r) ? portionArr.push(r) : null;
+              // });
+
+              // var pa = [];
+              // var pb = [];
+              // portionArr.map(c => {
+              //     // calculate the similarity with ingedient and portion
+              //     pa.push(
+              //       refPortion.includes(c) ? refPortion[refPortion.indexOf(c)] : 0
+              //     );
+              //     pb.push(
+              //       testPortion.includes(c) ? testPortion[testPortion.indexOf(c)] : 0
+              //     );
+      
+              // });
+
+              // var portionSimilarity = similarity(pa, pb);
+              var ingredientSimilarity = similarity(a, b);
+
+
+              var s =  ingredientSimilarity * 0.9 + StringSimilarity.compareTwoStrings(r.recipeName, ref.recipeName) * 0.1;
+              if (s > 0.5) {
+                r.similarity = s;
+                recommend.push(r);
+              }
+            }
+          });
+
+          recommend.sort(function(a, b) {
+            var weighting = [1,0]
+            var dateA = new Date(a.createDate).getTime();
+            var dateB = new Date(b.createDate).getTime();
+
+            if (a.similarity * weighting[0] + dateA * weighting[1] > b.similarity * weighting[0] + dateB * weighting[1]) {
+              return -1;
+            } else if (a.similarity * weighting[0] + dateA * weighting[1] < b.similarity * weighting[0] + dateB * weighting[1]) {
+              return 1;
+            }
+            return 0;
+          });
+
+          recommend ? resolve(recommend.slice(0, 5)) : resolve([]);
+          // req.db.models.
+        })
+    )
+      .then(rows =>
+        res.status(200).json({
+          result: true,
+          data: {
+            total: rows.length,
+            rows: rows.map(r => ({
+              id              : r.recipeID,
+              name            : r.recipeName,
+              ingredientSetID : r.ingredientSetID,
+              detailStep      : r.detailStep,
+              createDate      : r.createDate,
+              createdBy       : r.createdBy,
+              calorie         : r.calorielevel,
+              ingredient_list : r.ingredient_list_name,
+              portion_list    : r.ingredient_list_portion,
+              similarity      : r.similarity,
+              imageUrl        : r.imageUrl,
+              rating          : r.rating,
+              n_rating        : r.n_rating,
+            }))
+          }
+        })
+      )
+      .catch(error =>
+        res.status(400).json({  
+          result: false,
+          messages: error
+        })
+      );
+  },
+
   "GET /similar_num_of_steps_recipe": function(req, res) {
     // get articles
 
@@ -391,7 +547,7 @@ module.exports = {
   "GET /newest_recipes": function(req, res) {
     new Promise((resolve, reject) => {
       req.db.models.recipe
-        .fetchNewestRecipe(req.query.uid)
+        .fetchNewestRecipe()
         .then(rows => {
           if (rows.length) {
             resolve(rows);
@@ -407,7 +563,7 @@ module.exports = {
           data: {
             total: rows.length,
             rows:
-              rows.map(r => ({
+            rows.map(r => ({
                 id: r.recipeID,
                 name: r.recipeName,
                 ingredientSetID: r.ingredientSetID,
@@ -430,6 +586,75 @@ module.exports = {
         })
       );
   },
+
+  "GET /newest_low_cal_recipes": function(req, res) {
+    new Promise((resolve, reject) => {
+      req.db.models.recipe
+        .fetchNewestRecipe()
+        .then(rows => {
+          if (rows.length) {
+            resolve(rows);
+          } else {
+            resolve([]);
+          }
+        })
+        .catch(reject);
+    })
+    .then((data) => new Promise((resolve, reject) => {
+      req.db.models.user
+        .fetchUserProfile(req.query.uid)
+        .then(rows => {
+          lowCal = false;
+          if (rows.length) {
+            if (rows[0].onDiet == 'Y'){
+              data.sort(function(a, b) {
+                if (a.calorielevel < b.calorielevel) {
+                  return -1;
+                } else if (b.calorielevel < a.calorielevel) {
+                  return 1;
+                }
+                return 0;
+              });
+              lowCal = true;
+            }
+            resolve({rows : data, lowCal : lowCal});
+          } else {
+            resolve([]);
+          }
+        })
+        .catch(reject);
+    }))
+      .then(data =>
+        res.status(200).json({
+          result: true,
+          data: {
+            total: data.rows.length,
+            lowCal : data.lowCal,
+            rows:
+            data.rows.map(r => ({
+                id: r.recipeID,
+                name: r.recipeName,
+                ingredientSetID: r.ingredientSetID,
+                detailStep: r.detailStep,
+                createDate: r.createDate,
+                createdBy: r.createdBy,
+                calorie: r.calorielevel,
+                ingredient_list: r.ingredient_list,
+                rating: r.rating,
+                n_rating: r.n_rating,
+                imageUrl : r.imageUrl
+              })) || []
+          }
+        })
+      )
+      .catch(error =>
+        res.status(400).json({
+          result: false,
+          messages: error
+        })
+      );
+  },
+
 
   "GET /cf_recipe": function(req, res) {
     req
@@ -479,7 +704,7 @@ module.exports = {
                 rating: r.rating,
                 n_rating: r.n_rating,
                 imageUrl : r.imageUrl
-              })) || []
+              })).slice(0, 5) || []
           }
         })
       )
@@ -514,11 +739,19 @@ module.exports = {
             var ref = {};
             var recommend = [];
             var sim = 0;
+            var minDate = null;
+            var maxDate = null;
+
             rows.map(r => {
               if (r.recipeID == req.query.rid) {
                 ref = r;
               }
+              var date = new Date(r.createDate).getTime()
+              minDate = date < minDate ? date : minDate;
+              maxDate = date > maxDate ? date : maxDate;
             });
+
+            ref.date = (new Date(ref.createDate).getTime() - minDate) / (maxDate - minDate);
 
             rows.map(r => {
               if (
@@ -526,48 +759,77 @@ module.exports = {
                 r.ingredient_list_id &&
                 ref.ingredient_list_id
               ) {
-                var refList = ref.ingredient_list_id.split(",");
-                var refPortion = ref.ingredient_list_portion.split(",");
-                var testList = r.ingredient_list_id.split(",");
-                var testPortion = r.ingredient_list_portion.split(",");
-
-                var combineArr = [];
-                testList.map(t => {
-                  !combineArr.includes(t) ? combineArr.push(t) : null;
-                });
-
-                refList.map(r => {
-                  !combineArr.includes(r) ? combineArr.push(r) : null;
-                });
-
-                var a = [];
-                var b = [];
-                combineArr.map(c => {
-                  // calculate the similarity with ingedient and portion
-                  a.push(
-                    refList.includes(c) ? refPortion[refList.indexOf(c)] : 0
-                  );
-                  b.push(
-                    testList.includes(c) ? testPortion[testList.indexOf(c)] : 0
-                  );
-                });
-
-                var s = similarity(a, b) * 0.6 + StringSimilarity.compareTwoStrings(r.recipeName, ref.recipeName) * 0.4;
+                  var refList = ref.ingredient_list_id.split(",");
+                  var refPortion = ref.ingredient_list_portion.split(",");
+                  var testList = r.ingredient_list_id.split(",");
+                  var testPortion = r.ingredient_list_portion.split(",");
+    
+                  var combineArr = [];
+                  var portionArr = [];
+                  testList.map(t => {
+                    !combineArr.includes(t) ? combineArr.push(t) : null;
+                  });
+    
+                  refList.map(r => {
+                    !combineArr.includes(r) ? combineArr.push(r) : null;
+                  });
+    
+                  // portion
+                  testPortion.map(t => {
+                    !portionArr.includes(t) ? portionArr.push(t) : null;
+                  });
+    
+                  refPortion.map(r => {
+                    !portionArr.includes(r) ? portionArr.push(r) : null;
+                  });
+    
+                  var a = [];
+                  var b = [];
+                  combineArr.map(c => {
+                    // calculate the similarity with ingedient and portion
+                    a.push(
+                      refList.includes(c) ? refList[refList.indexOf(c)] : 0
+                    );
+                    b.push(
+                      testList.includes(c) ? testList[testList.indexOf(c)] : 0
+                    );
+                  });
+    
+                  var pa = [];
+                  var pb = [];
+                  portionArr.map(c => {
+                      // calculate the similarity with ingedient and portion
+                      pa.push(
+                        refPortion.includes(c) ? refPortion[refPortion.indexOf(c)] : 0
+                      );
+                      pb.push(
+                        testPortion.includes(c) ? testPortion[testPortion.indexOf(c)] : 0
+                      );
+          
+                  });
+    
+                  var portionSimilarity = similarity(pa, pb);
+                  var ingredientSimilarity = similarity(a, b);
+    
+    
+                  var s =  ingredientSimilarity * 0.85 + portionSimilarity * 0.1 + StringSimilarity.compareTwoStrings(r.recipeName, ref.recipeName) * 0.05;
+                 
                 if (s > 0.5) {
-                  r.similarity = s;
+                  var date = new Date(r.createDate).getTime();
+                  var weighting = [0.1, 0.9]
+                  r.date = (date - minDate) / (maxDate - minDate)
+                  var dateDiff = (Math.abs(r.date - ref.date) / Math.max(r.date, ref.date));
+                  r.weightedSimilarity = s * weighting[0] + dateDiff * weighting[1];
+                  r.similarity = s
                   recommend.push(r);
                 }
               }
             });
 
             recommend.sort(function(a, b) {
-              var weighting = [0.6, 0.4]
-              var dateA = new Date(a.createDate).getTime();
-              var dateB = new Date(b.createDate).getTime();
-
-              if (a.similarity * weighting[0] + dateA * weighting[1] > b.similarity * weighting[0] + dateB * weighting[1]) {
+              if (a.weightedSimilarity > b.weightedSimilarity) {
                 return -1;
-              } else if (a.similarity * weighting[0] + dateA * weighting[1] < b.similarity * weighting[0] + dateB * weighting[1]) {
+              } else if (a.weightedSimilarity  < b.weightedSimilarity) {
                 return 1;
               }
               return 0;
@@ -584,18 +846,20 @@ module.exports = {
             total: rows.length,
             rows: rows.length
               ? rows.map(r => ({
-                  id: r.recipeID,
-                  name: r.recipeName,
-                  ingredientSetID: r.ingredientSetID,
-                  detailStep: r.detailStep,
-                  createDate: r.createDate,
-                  createdBy: r.createdBy,
-                  calorie: r.calorielevel,
-                  ingredient_list: r.ingredient_list_name,
-                  similarity: r.similarity,
-                  imageUrl        : r.imageUrl,
-                  rating          : r.rating,
-                  n_rating        : r.n_rating,
+                  id                 : r.recipeID,
+                  name               : r.recipeName,
+                  ingredientSetID    : r.ingredientSetID,
+                  detailStep         : r.detailStep,
+                  createDate         : r.createDate,
+                  createdBy          : r.createdBy,
+                  calorie            : r.calorielevel,
+                  ingredient_list    : r.ingredient_list_name,
+                  portion_list       : r.ingredient_list_portion,
+                  similarity         : r.similarity,
+                  weightedSimilarity : r.weightedSimilarity,
+                  imageUrl           : r.imageUrl,
+                  rating             : r.rating,
+                  n_rating           : r.n_rating,
                 })) || []
               : []
           }
@@ -994,6 +1258,30 @@ module.exports = {
         .fetchRecipeIDBySimilarUserWithProfileAndGender(req.query.uid)
         .then(rows => {
           if (rows.length) {
+              var max = 0;
+              var min = null;
+              rows.map(r => {
+                max = r.count_similar > max ? r.count_similar : max
+                min = r.count_similar < min || min == null ? r.count_similar : min
+              })
+
+              rows.map(r => {
+                var g = 0, d = 0, a = 0;
+                g = r.gender == r.ref_gender ? 1 : 0;
+                d = r.onDiet == r.ref_on_diet ? 1 : 0;
+                a = 1 - Math.abs(r.age - r.ref_age) / Math.max(r.age, r.ref_age);
+                r.similarity = (r.count_similar - min)/(max -min) * 0.3 + g * 0.2 + d * 0.3 + a * 0.2;
+              })
+
+              rows.sort(function(a, b) {
+                if (a.similarity > b.similarity) {
+                  return -1;
+                } else if (b.similarity > a.similarity) {
+                  return 1;
+                }
+                return 0;
+              });
+
             var ids = rows.map(v => v.userID);
 
             req.db.models.recipe
@@ -1030,7 +1318,7 @@ module.exports = {
                 rating          : r.rating,
                 n_rating        : r.n_rating,
                 imageUrl        : r.imageUrl
-              })) || []
+              })).slice(0, 5) || []
           }
         })
       )

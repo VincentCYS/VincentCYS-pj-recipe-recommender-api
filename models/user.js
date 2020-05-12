@@ -27,11 +27,7 @@ module.exports = (db) => {
             // create query
             var query = `
             SELECT
-                *, (SELECT r.* 
-                    FROM recipe AS r 
-                    JOIN userbrowsehistory as b    
-                    ON r.recipeID = b.recipeID
-                )
+                *
             
             FROM user AS u 
             WHERE u.userID = ? 

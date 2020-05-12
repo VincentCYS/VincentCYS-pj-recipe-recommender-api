@@ -13,7 +13,7 @@ new Promise((resolve, reject) => {
     if (rows.length) {
       resolve(rows)
     } else {
-      reject('rating.not/found')
+      resolve([])
     }
   }).catch(reject)
 })
