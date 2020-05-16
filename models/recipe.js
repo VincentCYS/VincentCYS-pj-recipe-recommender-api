@@ -176,34 +176,6 @@ module.exports = (db) => {
             var query = `
             SELECT           
             r.*, 
-            (
-                SELECT GROUP_CONCAT(CONCAT(portion,' ' ,s.quantifier, ' ', i.ingredientName))
-                FROM ingredientset AS s
-                INNER JOIN ingredient AS i
-                ON i.ingredientID = s.ingredientID
-                WHERE r.recipeID = s.recipeID
-            ) AS ingredient_list,
-            (
-                SELECT GROUP_CONCAT(i.ingredientID)
-                FROM ingredientset AS s
-                INNER JOIN ingredient AS i
-                ON i.ingredientID = s.ingredientID
-                WHERE r.recipeID = s.recipeID
-            ) AS ingredient_list_id,
-            (
-                SELECT GROUP_CONCAT(i.ingredientName)
-                FROM ingredientset AS s
-                INNER JOIN ingredient AS i
-                ON i.ingredientID = s.ingredientID
-                WHERE r.recipeID = s.recipeID
-            ) AS ingredient_list_name,
-            (
-                SELECT GROUP_CONCAT(s.portion)
-                FROM ingredientset AS s
-                INNER JOIN ingredient AS i
-                ON i.ingredientID = s.ingredientID
-                WHERE r.recipeID = s.recipeID
-            ) AS ingredient_list_portion,
             IFNULL (
             ( 
                 SELECT AVG(rating) AS totalRate 
@@ -247,51 +219,54 @@ module.exports = (db) => {
             var args = Array.from(arguments);            
             // create query
             var query = `
-            SELECT DISTINCT
-                *, 
-                (
-                    SELECT GROUP_CONCAT(i.ingredientID)
-                    FROM ingredientset AS s
-                    INNER JOIN ingredient AS i
-                    ON i.ingredientID = s.ingredientID
-                    WHERE r.recipeID = s.recipeID
-                ) AS ingredient_list_id,
-                (
-                    SELECT GROUP_CONCAT(i.ingredientName)
-                    FROM ingredientset AS s
-                    INNER JOIN ingredient AS i
-                    ON i.ingredientID = s.ingredientID
-                    WHERE r.recipeID = s.recipeID
-                ) AS ingredient_list_name,
-                (
-                    SELECT GROUP_CONCAT(s.portion)
-                    FROM ingredientset AS s
-                    INNER JOIN ingredient AS i
-                    ON i.ingredientID = s.ingredientID
-                    WHERE r.recipeID = s.recipeID
-                ) AS ingredient_list_portion,
-                IFNULL (
-                    ( 
-                        SELECT AVG(rating) AS totalRate 
-                        FROM rating AS a
-                      WHERE a.recipeID = r.recipeID
+            SELECT * FROM recipe_ingredients
+            `
+            // var query = `
+            // SELECT DISTINCT
+            //     *, 
+            //     (
+            //         SELECT GROUP_CONCAT(i.ingredientID)
+            //         FROM ingredientset AS s
+            //         INNER JOIN ingredient AS i
+            //         ON i.ingredientID = s.ingredientID
+            //         WHERE r.recipeID = s.recipeID
+            //     ) AS ingredient_list_id,
+            //     (
+            //         SELECT GROUP_CONCAT(i.ingredientName)
+            //         FROM ingredientset AS s
+            //         INNER JOIN ingredient AS i
+            //         ON i.ingredientID = s.ingredientID
+            //         WHERE r.recipeID = s.recipeID
+            //     ) AS ingredient_list_name,
+            //     (
+            //         SELECT GROUP_CONCAT(s.portion)
+            //         FROM ingredientset AS s
+            //         INNER JOIN ingredient AS i
+            //         ON i.ingredientID = s.ingredientID
+            //         WHERE r.recipeID = s.recipeID
+            //     ) AS ingredient_list_portion,
+            //     IFNULL (
+            //         ( 
+            //             SELECT AVG(rating) AS totalRate 
+            //             FROM rating AS a
+            //           WHERE a.recipeID = r.recipeID
         
-                        GROUP BY a.recipeID
-                    )
-                    , 0) AS rating,
-                    IFNULL (
-                    ( 
-                        SELECT COUNT(*) n_rating  
-                        FROM rating AS a
-                        WHERE a.recipeID = r.recipeID
+            //             GROUP BY a.recipeID
+            //         )
+            //         , 0) AS rating,
+            //         IFNULL (
+            //         ( 
+            //             SELECT COUNT(*) n_rating  
+            //             FROM rating AS a
+            //             WHERE a.recipeID = r.recipeID
         
-                        GROUP BY a.recipeID
-                    )
-                    , 0) AS n_rating
+            //             GROUP BY a.recipeID
+            //         )
+            //         , 0) AS n_rating
                 
-            FROM recipe AS r 
-            ORDER BY r.createDate DESC
-            `;
+            // FROM recipe AS r 
+            // ORDER BY r.createDate DESC
+            // `;
             // return a promise object
             return new Promise((resolve, reject) => {
                 // get records from db
@@ -311,34 +286,6 @@ module.exports = (db) => {
             var query = `
             SELECT           
             r.*, 
-            (
-                SELECT GROUP_CONCAT(CONCAT(portion,' ' ,s.quantifier, ' ', i.ingredientName))
-                FROM ingredientset AS s
-                INNER JOIN ingredient AS i
-                ON i.ingredientID = s.ingredientID
-                WHERE r.recipeID = s.recipeID
-            ) AS ingredient_list,
-            (
-                SELECT GROUP_CONCAT(i.ingredientID)
-                FROM ingredientset AS s
-                INNER JOIN ingredient AS i
-                ON i.ingredientID = s.ingredientID
-                WHERE r.recipeID = s.recipeID
-            ) AS ingredient_list_id,
-            (
-                SELECT GROUP_CONCAT(i.ingredientName)
-                FROM ingredientset AS s
-                INNER JOIN ingredient AS i
-                ON i.ingredientID = s.ingredientID
-                WHERE r.recipeID = s.recipeID
-            ) AS ingredient_list_name,
-            (
-                SELECT GROUP_CONCAT(s.portion)
-                FROM ingredientset AS s
-                INNER JOIN ingredient AS i
-                ON i.ingredientID = s.ingredientID
-                WHERE r.recipeID = s.recipeID
-            ) AS ingredient_list_portion,
             IFNULL (
             ( 
                 SELECT AVG(rating) AS totalRate 
@@ -369,7 +316,7 @@ module.exports = (db) => {
                 SELECT calorielevel
                 FROM recipe
                 WHERE recipeID = ${rid}
-            ) )<= 100 AND
+            ) )<= 50 AND
             r.recipeId != ${rid}
             GROUP BY r.recipeID
             ORDER BY r.calorielevel
@@ -392,38 +339,7 @@ module.exports = (db) => {
             // create query
             var query = `
             SELECT           
-            r.*, 
-            (
-                SELECT GROUP_CONCAT(CONCAT(portion,' ' ,s.quantifier, ' ', i.ingredientName))
-                FROM ingredientset AS s
-                INNER JOIN ingredient AS i
-                ON i.ingredientID = s.ingredientID
-                WHERE r.recipeID = s.recipeID
-            ) AS ingredient_list,
-            (
-                SELECT GROUP_CONCAT(i.ingredientID)
-                FROM ingredientset AS s
-                INNER JOIN ingredient AS i
-                ON i.ingredientID = s.ingredientID
-                WHERE r.recipeID = s.recipeID
-            ) AS ingredient_list_id,
-            (
-                SELECT GROUP_CONCAT(i.ingredientName)
-                FROM ingredientset AS s
-                INNER JOIN ingredient AS i
-                ON i.ingredientID = s.ingredientID
-                WHERE r.recipeID = s.recipeID
-            ) AS ingredient_list_name,
-            (
-                SELECT GROUP_CONCAT(s.portion)
-                FROM ingredientset AS s
-                INNER JOIN ingredient AS i
-                ON i.ingredientID = s.ingredientID
-                WHERE r.recipeID = s.recipeID
-            ) AS ingredient_list_portion,
-            
-            
-           group_concat(s.description),
+            r.*,
 			COUNT(*) AS num_of_steps,
             IFNULL (
             ( 
@@ -475,41 +391,25 @@ module.exports = (db) => {
             
             // create query
             var query = `
-            SELECT DISTINCT 
-                recipeID,
-                recipeName,
-                detailStepID,
-                createDate,
-                calorielevel,
-                createdBy,
-                servings,
-                IFNULL (
-                    ( 
-                        SELECT AVG(rating) AS totalRate 
-                        FROM rating AS a
-                      WHERE a.recipeID = r.recipeID
-        
-                        GROUP BY a.recipeID
-                    )
-                    , 0) AS totalRating,,
-                imageUrl
-            FROM
-            (SELECT 
-                b.browseID,
-                r.* , (
-                SELECT AVG(rating) 
-                FROM rating AS a 
-                WHERE a.recipeID = b.recipeID 
-                GROUP BY b.recipeID
-            ) AS totalRating
-            FROM recipe AS r
-            INNER JOIN userbrowsehistory AS b
-            ON r.recipeID = b.recipeID
-            WHERE b.userID = ?
-            ORDER BY b.browseID DESC) AS browse
+            SELECT DISTINCT r.* ,
+            IFNULL (
+            ( 
+                SELECT AVG(rating) AS totalRate 
+                FROM rating AS a
+            WHERE a.recipeID = r.recipeID
+                GROUP BY a.recipeID
+            )
+            , 0) AS totalRating
+            FROM recipe AS r 
+            INNER JOIN (
+            SELECT 
+                recipeID, browseID
+                FROM userbrowsehistory
+                WHERE userID = 7
+                ORDER BY browseID DESC
+            ) AS u
+            ON u.recipeID = r.recipeID
             LIMIT 5
-            
-
             `;
             // return a promise object
             return new Promise((resolve, reject) => {
@@ -589,19 +489,68 @@ module.exports = (db) => {
             // create query
             var query = `
             SELECT 
-                r.*,
-                AVG(rating) AS rating,
-                (SELECT COUNT(*) 
-                    FROM rating AS a
-                    WHERE r.recipeID = a.recipeID) AS n_rating
+            r.*,
+            (
+                
+                SELECT COUNT(*) 
+                FROM userbrowsehistory 
+                WHERE r.recipeID = recipeID
+            ) AS views,
+            (
+                SELECT COUNT(*) 
+                FROM rating AS a
+                WHERE r.recipeID = a.recipeID
+            ) AS n_rating,      
+            IFNULL (
+            ( 
+                SELECT AVG(rating) AS totalRate 
+                FROM rating AS a
+              WHERE a.recipeID = r.recipeID
+
+                GROUP BY a.recipeID
+            )
+            , 0) AS rating
             FROM userbrowsehistory AS u
             INNER JOIN recipe AS r
             ON r.recipeID = u.recipeID
-            JOIN  rating AS a
+            GROUP BY recipeID
+            ORDER BY views DESC
+            LIMIT 5
+            `;
+            // return a promise object
+            return new Promise((resolve, reject) => {
+                // get records from db
+                db.query(query, args, (err, rows) => {
+                    // return result
+                    err != null ? reject({
+                        code    : 500,
+                        messages: [err.message]
+                    }) : resolve(rows);
+                });
+            });
+        },
+
+        fetchMostRatedRecipe: function() {
+            var args = Array.from(arguments);            
+            // create query
+            var query = `
+            SELECT 
+            r.*,
+            AVG(u.rating) AS rating,
+            (
+                SELECT COUNT(*) 
+                FROM rating AS a
+                WHERE r.recipeID = a.recipeID
+            ) AS n_rating
+            FROM rating AS u
+            INNER JOIN recipe AS r
+            ON r.recipeID = u.recipeID
+            INNER JOIN  rating AS a
             ON a.recipeID = u.recipeID
             GROUP BY recipeID
-            ORDER BY n_rating DESC
-            LIMIT 5
+            ORDER BY rating DESC, n_rating DESC
+            LIMIT 5;
+
             `;
             // return a promise object
             return new Promise((resolve, reject) => {
@@ -619,32 +568,31 @@ module.exports = (db) => {
             var args = Array.from(arguments);            
             // create query
             var query = `
-            SELECT 
-            r.*,
-            COUNT(*)  +  (
-            SELECT COUNT(*) 
-            FROM rating AS a
-            WHERE r.recipeID = a.recipeID
-            ) AS popularity,
-            
+            SELECT  
+            r.*, 
+            COUNT(r.recipeID) AS views,
             (
-            SELECT COUNT(*) 
-            FROM rating AS a
-            WHERE r.recipeID = a.recipeID
+                SELECT COUNT(*) 
+                FROM rating AS a
+                WHERE r.recipeID = a.recipeID
             ) AS n_rating,
-                
             (
-            SELECT AVG(rating) 
-            FROM rating AS a
-            WHERE r.recipeID = a.recipeID
-            GROUP BY a.recipeID
+                SELECT AVG(rating) 
+                FROM rating AS a
+                WHERE r.recipeID = a.recipeID
+                GROUP BY a.recipeID
             ) AS rating
-                
-            FROM userbrowsehistory AS u
+
+            FROM (
+                SELECT  *
+                FROM userbrowsehistory
+                ORDER BY browseID DESC
+                LIMIT 30
+            ) as u
             JOIN recipe AS r
             ON r.recipeID = u.recipeID
-            GROUP BY r.recipeID
-            ORDER BY popularity ${args[0] == 'd' ? 'DESC' : ''}
+            GROUP BY u.recipeID
+            ORDER BY views ${args[0] == 'd' ? 'DESC' : ''}
             LIMIT 5
             `;
             // return a promise object
@@ -723,15 +671,15 @@ module.exports = (db) => {
             ) AS rating,
 
             (
-                SELECT COUNT(u.recipeTagTypeID) / (
+                SELECT COUNT(u.ingredientID) / (
                     SELECT COUNT(*) 
                     FROM userlike
                     WHERE userID = ${uid}
                     GROUP BY userID
                 )
-                FROM recipetag AS rt
+                FROM ingredientset AS rt
                 INNER JOIN userlike AS u
-                ON rt.recipeTagTypeID = u.recipeTagTypeID
+                ON rt.ingredientID = u.ingredientID
                 WHERE u.userID = ${uid} 
                 AND r.recipeID = rt.recipeID
                 GROUP BY recipeID
@@ -741,9 +689,9 @@ module.exports = (db) => {
             WHERE r.recipeID IN
             (
                 SELECT recipeID
-                FROM recipetag AS rt
+                FROM ingredientset AS rt
                 INNER JOIN userlike AS u
-                ON rt.recipeTagTypeID = u.recipeTagTypeID
+                ON rt.ingredientID = u.ingredientID
                 WHERE u.userID = ${uid}
             )
             ORDER BY tag_similarity DESC

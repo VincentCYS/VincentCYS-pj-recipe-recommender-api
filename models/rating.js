@@ -14,7 +14,7 @@ module.exports = (db) => {
                     GROUP BY recipeID
                 )
             , 0) AS totalRate
-            FROM rating AS a
+            FROM rating AS a 
             `;
             // return a promise object
             return new Promise((resolve, reject) => {
@@ -69,7 +69,7 @@ module.exports = (db) => {
 			*
             FROM rating AS a
             WHERE a.userID = ${uid}
-            ORDER BY rating DESC
+            ORDER BY ratingID DESC, rating DESC 
             `;
             // return a promise object
             return new Promise((resolve, reject) => {

@@ -2,12 +2,12 @@
 
 module.exports = {
 
-  "GET /recipe_tag": function(req, res) {
+  "GET /ingredients": function(req, res) {
 
     new Promise((resolve, reject) => {
       var ids = req.query.ids ? req.query.ids.split(',') : '';
-      req.db.models.recipe_tag
-        .fetchRecipeTag(
+      req.db.models.ingredient
+        .fetchIngredient(
           ids
         )
         .then(rows => {              

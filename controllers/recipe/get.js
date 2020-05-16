@@ -48,8 +48,7 @@ module.exports = {
               createdBy       : r.createdBy,
               calorie         : r.calorielevel,
               rating          : r.rating,
-              ingredient_list : r.ingredient_list,
-              imageUrl        : r.imageUrl
+              ingredient_list : r.ingredient_list
             }))
           }
         })
@@ -65,10 +64,12 @@ module.exports = {
   "GET /similar_liked_recipe": function(req, res) {
 
     var rid = '';
+    var rated = [];
     new Promise((resolve, reject) =>{
       req.db.models.rating.getRating(req.query.uid)
       .then(rows => {
         if (rows.length) {
+          rated = rows;
           rid = rows[0].recipeID;
           resolve(rows);
         } else {
@@ -94,9 +95,15 @@ module.exports = {
           var ref = {};
           var recommend = [];
           var sim = 0;
-          rows.map(r => {
+          rows.map((r, i) => {
             if (r.recipeID == rid) {
               ref = r;
+            } else {
+              rated.map(rate => {
+                if (rate.recipeID == r.recipeID) {
+                  rows.splice(i, 1)
+                }
+              })
             }
           });
 
@@ -163,10 +170,10 @@ module.exports = {
 
 
               var s =  ingredientSimilarity * 0.9 + StringSimilarity.compareTwoStrings(r.recipeName, ref.recipeName) * 0.1;
-              if (s > 0.5) {
+              // if (s > 0.5) {
                 r.similarity = s;
                 recommend.push(r);
-              }
+              // }
             }
           });
 
@@ -203,7 +210,6 @@ module.exports = {
               ingredient_list : r.ingredient_list_name,
               portion_list    : r.ingredient_list_portion,
               similarity      : r.similarity,
-              imageUrl        : r.imageUrl,
               rating          : r.rating,
               n_rating        : r.n_rating,
             }))
@@ -248,7 +254,6 @@ module.exports = {
               calorie         : r.calorielevel,
               rating          : r.rating,
               ingredient_list : r.ingredient_list,
-              imageUrl        : r.imageUrl,
               num_of_steps    : r.num_of_steps
             }))
           }
@@ -292,7 +297,6 @@ module.exports = {
               calorie         : r.calorielevel,
               rating          : r.rating,
               ingredient_list : r.ingredient_list,
-              imageUrl        : r.imageUrl,
               num_of_steps    : r.num_of_steps
             }))
           }
@@ -336,7 +340,6 @@ module.exports = {
                 ingredient_list : r.ingredient_list,
                 rating          : r.rating,
                 n_rating        : r.n_rating,
-                imageUrl        : r.imageUrl
               })) || []
           }
         })
@@ -379,7 +382,6 @@ module.exports = {
                 calorie: r.calorielevel,
                 rating: r.rating,
                 n_rating: r.n_rating,
-                imageUrl : r.imageUrl
               })) || []
           }
         })
@@ -424,11 +426,10 @@ module.exports = {
                 createDate      : r.createDate,
                 createdBy       : r.createdBy,
                 calorie         : r.calorielevel,
-                rating          : r.totalRate,
+                rating          : r.totalRating,
                 ingredient_list : r.ingredient_list,
-                imageUrl        : r.imageUrl
-              })) || []
-          }
+              }))
+            }
         })
       )
       .catch(error =>
@@ -531,7 +532,6 @@ module.exports = {
                 calorie         : r.calorielevel,
                 rating          : r.rating,
                 ingredient_list : r.ingredient_list,
-                imageUrl        : r.imageUrl
               })) || []
           }
         })
@@ -574,7 +574,6 @@ module.exports = {
                 ingredient_list: r.ingredient_list,
                 rating: r.rating,
                 n_rating: r.n_rating,
-                imageUrl : r.imageUrl
               })) || []
           }
         })
@@ -642,7 +641,6 @@ module.exports = {
                 ingredient_list: r.ingredient_list,
                 rating: r.rating,
                 n_rating: r.n_rating,
-                imageUrl : r.imageUrl
               })) || []
           }
         })
@@ -703,7 +701,6 @@ module.exports = {
                 ingredient_list: r.ingredient_list,
                 rating: r.rating,
                 n_rating: r.n_rating,
-                imageUrl : r.imageUrl
               })).slice(0, 5) || []
           }
         })
@@ -742,9 +739,10 @@ module.exports = {
             var minDate = null;
             var maxDate = null;
 
-            rows.map(r => {
+            rows.map((r, i) => {
               if (r.recipeID == req.query.rid) {
                 ref = r;
+                rows.splice(i ,1)
               }
               var date = new Date(r.createDate).getTime()
               minDate = date < minDate ? date : minDate;
@@ -766,22 +764,25 @@ module.exports = {
     
                   var combineArr = [];
                   var portionArr = [];
-                  testList.map(t => {
-                    !combineArr.includes(t) ? combineArr.push(t) : null;
-                  });
+                  // testList.map(t => {
+                  //   !combineArr.includes(t) ? combineArr.push(t) : null;
+                  // });
     
-                  refList.map(r => {
-                    !combineArr.includes(r) ? combineArr.push(r) : null;
-                  });
+                  // refList.map(r => {
+                  //   !combineArr.includes(r) ? combineArr.push(r) : null;
+                  // });
+
+                  combineArr = refList.concat(testList);
+                  portionArr = refPortion.concat(testPortion);
     
-                  // portion
-                  testPortion.map(t => {
-                    !portionArr.includes(t) ? portionArr.push(t) : null;
-                  });
+                  // // portion
+                  // testPortion.map(t => {
+                  //   !portionArr.includes(t) ? portionArr.push(t) : null;
+                  // });
     
-                  refPortion.map(r => {
-                    !portionArr.includes(r) ? portionArr.push(r) : null;
-                  });
+                  // refPortion.map(r => {
+                  //   !portionArr.includes(r) ? portionArr.push(r) : null;
+                  // });
     
                   var a = [];
                   var b = [];
@@ -797,7 +798,7 @@ module.exports = {
     
                   var pa = [];
                   var pb = [];
-                  portionArr.map(c => {
+                  portionArr.map((c, i) => {
                       // calculate the similarity with ingedient and portion
                       pa.push(
                         refPortion.includes(c) ? refPortion[refPortion.indexOf(c)] : 0
@@ -805,6 +806,8 @@ module.exports = {
                       pb.push(
                         testPortion.includes(c) ? testPortion[testPortion.indexOf(c)] : 0
                       );
+
+                      
           
                   });
     
@@ -816,9 +819,9 @@ module.exports = {
                  
                 if (s > 0.5) {
                   var date = new Date(r.createDate).getTime();
-                  var weighting = [0.1, 0.9]
                   r.date = (date - minDate) / (maxDate - minDate)
                   var dateDiff = (Math.abs(r.date - ref.date) / Math.max(r.date, ref.date));
+                  var weighting = [0.1, 0.9]
                   r.weightedSimilarity = s * weighting[0] + dateDiff * weighting[1];
                   r.similarity = s
                   recommend.push(r);
@@ -857,7 +860,6 @@ module.exports = {
                   portion_list       : r.ingredient_list_portion,
                   similarity         : r.similarity,
                   weightedSimilarity : r.weightedSimilarity,
-                  imageUrl           : r.imageUrl,
                   rating             : r.rating,
                   n_rating           : r.n_rating,
                 })) || []
@@ -1082,7 +1084,6 @@ module.exports = {
               rating          : r.rating,
               n_rating        : r.n_rating,
               similarity      : r.diffInPx,
-              imageUrl        : r.imageUrl,
               similarityToRef : r.similarityToRef
             })) || []
           }
@@ -1128,7 +1129,6 @@ module.exports = {
                 ingredient_list : r.ingredient_list,
                 rating          : r.rating || 0,
                 n_rating        : r.n_rating,
-                imageUrl        : r.imageUrl,
                 tag_similarity  : r.tag_similarity
               })) || []
           }
@@ -1173,7 +1173,6 @@ module.exports = {
                 ingredient_list: r.ingredient_list,
                 rating: r.rating || 0,
                 n_rating: r.n_rating,
-                imageUrl : r.imageUrl,
                 tag_similarity : r.tag_similarity
 
               })) || []
@@ -1230,7 +1229,6 @@ module.exports = {
   //               ingredient_list : r.ingredient_list,
   //               rating          : r.rating || 0,
   //               n_rating        : r.n_rating,
-  //               imageUrl        : r.imageUrl,
   //               tag_similarity  : r.tag_similarity,
   //               rate_of_fav     : r.rate_of_fav
   //             })) || []
@@ -1317,7 +1315,6 @@ module.exports = {
                 ingredient_list : r.ingredient_list,
                 rating          : r.rating,
                 n_rating        : r.n_rating,
-                imageUrl        : r.imageUrl
               })).slice(0, 5) || []
           }
         })
@@ -1441,7 +1438,6 @@ module.exports = {
               calorie         : r.calorielevel,
               rating          : r.rating,
               ingredient_list : r.ingredient_list,
-              imageUrl        : r.imageUrl,
               n_rating        : r.n_rating
             }))
           }

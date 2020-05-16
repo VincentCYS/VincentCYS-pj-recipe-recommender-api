@@ -14,7 +14,7 @@ const { parse } = require("recipe-ingredient-parser");
 module.exports = {
   "POST /login": function(req, res) {
         // req.body
-        req.checkBody('username', `username.invalid`).notEmpty().len(1, 1280);
+        req.checkBody('username', `username.required`).notEmpty().len(1, 1280);
         req.checkBody('passwd', `passwd.required`).notEmpty().len(1, 256);
         req.validate()
         .then(() => new Promise((resolve, reject) => {
@@ -87,7 +87,7 @@ module.exports = {
           id : id
       }
   }))
-  .catch(error => res.status(401).json({
+  .catch(error => res.status(400).json({
     result: false,
     messages: error
 }));

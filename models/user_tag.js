@@ -7,8 +7,8 @@ module.exports = (db) => {
             var tags = args[1];
             var query = '';
             tags.map(t => {
-                query += `INSERT INTO userlike (userID, recipeTagTypeID) VALUES (${uid}, '${t}' ); `;
-            })         ;
+                query += `INSERT INTO userlike (userID, ingredientID) VALUES (${uid}, '${t}' ); `;
+            });
 
             return new Promise((resolve, reject) => {
                 // get records from db

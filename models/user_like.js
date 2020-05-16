@@ -47,8 +47,8 @@ module.exports = (db) => {
                 DELETE FROM userlike
                 WHERE userID = ?
                 AND
-                LENGTH(userdetailID) > 10
-                ORDER BY userdetailID
+                LENGTH(userLikeID) > 10
+                ORDER BY userLikeID
                 LIMIT 1
             `;
             

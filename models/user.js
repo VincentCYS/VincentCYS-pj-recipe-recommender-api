@@ -28,7 +28,6 @@ module.exports = (db) => {
             var query = `
             SELECT
                 *
-            
             FROM user AS u 
             WHERE u.userID = ? 
             `;

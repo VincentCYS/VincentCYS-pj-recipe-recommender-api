@@ -15,35 +15,39 @@ module.exports = {
   "POST /create_profile": function(req, res) {
     // req.body
     req.checkBody('uid', `uid.invalid`).notEmpty().len(1, 1280);
-    req.checkBody('tags', `tags.required`).notEmpty().len(1, 256);
     req.validate()
     .then(() => new Promise((resolve, reject) => {
         var ids = req.body.tags ? req.body.tags : '';
 
-      req.db.models.recipe_tag.fetchRecipeTag(
+      req.db.models.ingredient.fetchIngredientTag(
         ids)
         .then(rows => {
         if (rows.length) {
             console.log(rows);
-            var ids = rows.map(r => r.recipeTagTypeID);
+            var ids = rows.map(r => r.ingredientID);
             resolve(ids)
         } else {
-          reject();
+          resolve([]);
         }
       }).catch(reject)
     }))
     .then((ids) => new Promise((resolve, reject) => {
-      req.db.models.user_tag.createUserTag(
-       req.body.uid, ids
-      ).then(rows => {
-        if (rows) {
-            console.log(rows);
-            
-          resolve()
-        } else {
-          reject()
-        }
-      }).catch(reject)
+      if (ids.length > 0 ) {
+        req.db.models.user_tag.createUserTag(
+          req.body.uid, ids
+         ).then(rows => {
+           if (rows) {
+               console.log(rows);
+               
+             resolve()
+           } else {
+             reject()
+           }
+         }).catch(reject)
+      } else {
+        reject("select.at.least.one.recipe.tag");
+      }
+     
     }))
   .then((id) => res.status(200).json({
       result  : true,

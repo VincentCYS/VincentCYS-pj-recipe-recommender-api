@@ -21,25 +21,7 @@ module.exports = (db) => {
                 });
             });
         },
-        fetchRecipeTag: function() {
-            var args = Array.from(arguments);            
-            // create query
-            var query = `
-            SELECT * FROM recipetagtype
-            ${args[0] ? 'WHERE recipetagtypeName IN (?)' : ''};        
-            `
-            // return a promise object
-            return new Promise((resolve, reject) => {
-                // get records from db
-                db.query(query, args, (err, rows) => {
-                    // return result
-                    err != null ? reject({
-                        code    : 500,
-                        messages: [err.message]
-                    }) : resolve(rows);
-                });
-            });
-        },
+  
 
         fetchRecipeTagNumber: function() {
             var args = Array.from(arguments);    
